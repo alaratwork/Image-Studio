@@ -1,0 +1,18 @@
+# build output
+build/
+search-engine/*.o
+search-engine/compute_features
+search-engine/match
+search-engine/gui
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
+*.iml
+.claude/
