@@ -1,20 +1,13 @@
 # Image Studio
-
-[![build](https://github.com/alaratwork/Image-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/alaratwork/Image-Studio/actions/workflows/ci.yml)
 ![Java 17+](https://img.shields.io/badge/Java-17%2B-b07219)
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-f34b7d)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4%20%7C%205-5c3ee8)
 ![PyTorch](https://img.shields.io/badge/PyTorch-ResNet--18-ee4c2c)
-[![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **A desktop photo editor that can find visually similar photos in your library.**
 Edit a photo, choose *Search → Find similar…*, and Image Studio shows the photos
 in your library that look most like it - ranked by color, layout, texture, or by
 features learned by a deep neural network.
-
-<p align="center">
-  <img src="docs/images/find-similar.png" alt="Find similar: a photo of a salt container and the eight closest photos in the library, the top five all salt containers" width="680">
-</p>
 
 ## What it does
 
@@ -41,55 +34,7 @@ features learned by a deep neural network.
 | **Desktop UI** | Swing; indexing and search run off the UI thread, so the editor stays responsive |
 | **Build, test and CI** | one `Makefile` for Java, C++ and Python; builds against OpenCV 4 and 5; 27 headless checks including end-to-end searches; GitHub Actions on every push |
 
-## Does the feature type matter? Yes
-
-Five queries against the 33-photo sample library, counting how many of the top
-four results show the same item. Some items have fewer than four other photos,
-so the best possible total is 16.
-
-| Feature | What it compares | Same-item matches in top 4 |
-|---|---|---|
-| `baseline` | the 7×7 center pixels | 9 / 16 |
-| `hist` | rg-chromaticity color histogram | 5 / 16 |
-| `multihist` | top-half and bottom-half color histograms | 9 / 16 |
-| `texture` | color + Sobel gradient-magnitude histogram | 8 / 16 |
-| `custom` | center color + whole-image texture | 7 / 16 |
-| **`dnn`** | **ResNet-18 embeddings, cosine distance** | **16 / 16** |
-
-Learned features found every possible match; the handcrafted ones found
-between 5 and 9. It's a small library and five queries, so this is a
-demonstration rather than a benchmark. Any row can be reproduced, e.g.
-`make demo FEATURE=hist QUERY=samples/library/photo_lemon_1.jpg`, or
-`make demo-dnn QUERY=samples/library/photo_lemon_1.jpg` after `make embeddings`.
-(Queries: `photo_lemon_1`, `salt_IMG_5481`, `ketchup_bottle_IMG_5476`,
-`avocado_1`, `photo_apricot_1`.)
-
-## Quickstart
-
-Requirements: a JDK 17+, `make`, a C++17 compiler, OpenCV 4 or 5, and `pkg-config`
-(on macOS: `brew install opencv pkg-config`; on Ubuntu: `apt install libopencv-dev pkg-config clang`).
-
-```bash
-git clone https://github.com/alaratwork/Image-Studio.git && cd Image-Studio
-make                # builds the editor, the search engine and Image Studio
-make run-studio     # opens Image Studio
-make test           # 27 checks, including end-to-end Java → C++ searches
-make demo           # command line: the photos most like a salt container
-```
-
-Deep-feature search is optional and needs Python:
-
-```bash
-pip install -r tools/requirements.txt
-make embeddings     # ResNet-18 embeddings for samples/library
-make demo-dnn       # the same salt query, ranked by learned features
-```
-
 ## Using Image Studio
-
-<p align="center">
-  <img src="docs/images/studio-editor.png" alt="The editor with a photo loaded: operations panel, image list, preview and live RGB histogram, with the Search menu in the menu bar" width="680">
-</p>
 
 1. **Load Image** and edit as you like - every operation creates a new image in
    the list, so the original is kept.
