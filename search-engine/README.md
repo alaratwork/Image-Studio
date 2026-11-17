@@ -47,13 +47,16 @@ Two-program design: `compute_features` builds the feature database once (cached 
 
 ## Build
 
-Requires OpenCV (tested with OpenCV 4 via Homebrew on macOS).
+Requires OpenCV 4 or 5 and `pkg-config`. From the **repository root**:
 
 ```bash
-make
+make engine
 ```
 
-Produces three executables: `compute_features`, `match`, `gui`.
+Produces three executables in this folder: `compute_features`, `match`, `gui`.
+The root `Makefile` runs this folder's own makefile with OpenCV flags from
+`pkg-config`, so it builds against Homebrew's OpenCV 5 on macOS and Ubuntu's
+OpenCV 4 alike. (Running plain `make` here assumes Homebrew's OpenCV 4 paths.)
 
 ## Usage
 
@@ -85,4 +88,4 @@ C++17 · OpenCV · ResNet18 embeddings (pre-trained on ImageNet) · Make
 
 ## Notes
 
-The CSV read/write utility is adapted from course-provided starter code. The ResNet18 embeddings were supplied as a precomputed CSV. All feature extraction, distance metrics, the MVC engine, both command-line programs, and the GUI are my own implementation.
+The CSV read/write utility (`csv_util`) is adapted from provided starter code, credited in its header. The original ResNet18 embeddings were supplied as a precomputed CSV; [`tools/embed_library.py`](../tools/embed_library.py) now generates them for any photo library. All feature extraction, distance metrics, the MVC engine, both command-line programs, and the GUI are my own implementation.
