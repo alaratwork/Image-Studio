@@ -1,21 +1,103 @@
 # Image Studio
 
+[![build](https://github.com/alaratwork/Image-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/alaratwork/Image-Studio/actions/workflows/ci.yml)
+![Java 17+](https://img.shields.io/badge/Java-17%2B-b07219)
+![C++17](https://img.shields.io/badge/C%2B%2B-17-f34b7d)
+![OpenCV](https://img.shields.io/badge/OpenCV-4%20%7C%205-5c3ee8)
+![PyTorch](https://img.shields.io/badge/PyTorch-ResNet--18-ee4c2c)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 **A desktop photo editor that can find visually similar photos in your library.**
-Edit a photo in the Java / Swing editor, choose *Search → Find similar…*, and a
-C++17 / OpenCV search engine ranks your library by how much each photo looks
-like the one you're editing - by colour, layout, texture, or learned ResNet-18
-features.
+Edit a photo, choose *Search → Find similar…*, and Image Studio shows the photos
+in your library that look most like it - ranked by color, layout, texture, or by
+features learned by a deep neural network.
 
 <p align="center">
-  <img src="docs/images/find-similar.png" alt="Find similar: the query photo of a salt container, and the eight closest photos in the library, the top five all salt containers" width="680">
+  <img src="docs/images/find-similar.png" alt="Find similar: a photo of a salt container and the eight closest photos in the library, the top five all salt containers" width="680">
 </p>
 
-| Component | Stack | What it does |
+## What it does
+
+- **Edit photos** - open PNG, JPEG, BMP or PPM files, brighten or darken them,
+  convert them with six greyscale modes, and watch a live RGB + intensity
+  histogram update with every change. Several images can be open at once.
+- **Find similar photos** - search with the photo *as you've edited it*. Results
+  appear as thumbnails ranked by similarity, and any of them opens in the editor
+  with one click.
+- **Choose what "similar" means** - five handcrafted image features (color,
+  spatial layout, texture and combinations), or embeddings from a ResNet-18
+  network for search by content.
+- **Search any folder** - point it at a photo library; it indexes the library
+  once and re-indexes only when photos are added, removed or changed.
+
+## What it demonstrates
+
+| Area | Where it shows up |
+|---|---|
+| **Computer vision and image retrieval** | rg-chromaticity color histograms, top/bottom spatial histograms, Sobel gradient texture, matched distance metrics, top-N content-based retrieval over a feature index - [`search-engine/`](search-engine/) |
+| **Deep learning** | a pretrained ResNet-18 used as a feature extractor (transfer learning), and a measured comparison of learned vs. handcrafted features - [`tools/`](tools/embed_library.py) |
+| **Software architecture** | MVC throughout; Command, Strategy and Factory patterns in the editor; a new feature added by composing the editor's public API, without modifying its code - [`editor/`](editor/), [`studio/`](studio/src/studio/) |
+| **Systems integration** | Java and C++ connected across a process boundary: subprocess management, timeouts, output parsing, error reporting, and a cached index with invalidation - [`SearchEngineBridge`](studio/src/studio/SearchEngineBridge.java) |
+| **Desktop UI** | Swing; indexing and search run off the UI thread, so the editor stays responsive |
+| **Build, test and CI** | one `Makefile` for Java, C++ and Python; builds against OpenCV 4 and 5; 27 headless checks including end-to-end searches; GitHub Actions on every push |
+
+## Does the feature type matter? Yes
+
+Five queries against the 33-photo sample library, counting how many of the top
+four results show the same item. Some items have fewer than four other photos,
+so the best possible total is 16.
+
+| Feature | What it compares | Same-item matches in top 4 |
 |---|---|---|
-| **[Editor](editor/README.md)** | Java 17+, Swing | load / save PPM, PNG, JPEG, BMP · brighten and darken · six greyscale modes · live RGB + intensity histogram |
-| **[Search engine](search-engine/README.md)** | C++17, OpenCV | indexes a folder once, then answers "top N most similar" · six feature types, each with a matched distance metric |
-| **Studio** (`studio/`) | Java | the bridge between them: *Find similar* inside the editor, backed by the engine |
-| **Embeddings** (`tools/`) | Python, PyTorch | ResNet-18 embeddings for any photo library, for the engine's deep-feature mode |
+| `baseline` | the 7×7 center pixels | 9 / 16 |
+| `hist` | rg-chromaticity color histogram | 5 / 16 |
+| `multihist` | top-half and bottom-half color histograms | 9 / 16 |
+| `texture` | color + Sobel gradient-magnitude histogram | 8 / 16 |
+| `custom` | center color + whole-image texture | 7 / 16 |
+| **`dnn`** | **ResNet-18 embeddings, cosine distance** | **16 / 16** |
+
+Learned features found every possible match; the handcrafted ones found
+between 5 and 9. It's a small library and five queries, so this is a
+demonstration rather than a benchmark. Any row can be reproduced, e.g.
+`make demo FEATURE=hist QUERY=samples/library/photo_lemon_1.jpg`, or
+`make demo-dnn QUERY=samples/library/photo_lemon_1.jpg` after `make embeddings`.
+(Queries: `photo_lemon_1`, `salt_IMG_5481`, `ketchup_bottle_IMG_5476`,
+`avocado_1`, `photo_apricot_1`.)
+
+## Quickstart
+
+Requirements: a JDK 17+, `make`, a C++17 compiler, OpenCV 4 or 5, and `pkg-config`
+(on macOS: `brew install opencv pkg-config`; on Ubuntu: `apt install libopencv-dev pkg-config clang`).
+
+```bash
+git clone https://github.com/alaratwork/Image-Studio.git && cd Image-Studio
+make                # builds the editor, the search engine and Image Studio
+make run-studio     # opens Image Studio
+make test           # 27 checks, including end-to-end Java → C++ searches
+make demo           # command line: the photos most like a salt container
+```
+
+Deep-feature search is optional and needs Python:
+
+```bash
+pip install -r tools/requirements.txt
+make embeddings     # ResNet-18 embeddings for samples/library
+make demo-dnn       # the same salt query, ranked by learned features
+```
+
+## Using Image Studio
+
+<p align="center">
+  <img src="docs/images/studio-editor.png" alt="The editor with a photo loaded: operations panel, image list, preview and live RGB histogram, with the Search menu in the menu bar" width="680">
+</p>
+
+1. **Load Image** and edit as you like - every operation creates a new image in
+   the list, so the original is kept.
+2. **Search → Find similar…** (⇧⌘F on macOS, Ctrl+Shift+F elsewhere) searches
+   the photo library for the selected image.
+3. **Search → Match by** picks the feature type; **Search → Photo library…**
+   picks the folder to search (the bundled `samples/library` by default).
+4. In the results window, **Open in editor** loads any match into the editor.
 
 ## How *Find similar* works
 
@@ -29,78 +111,19 @@ flowchart LR
     win -->|Open in editor| ed
 ```
 
-1. The photo **as currently edited** is written to a temporary PNG with the
+1. The photo as currently edited is written to a temporary PNG with the
    editor's own writer, so a brightened or greyscaled image is searched as-is.
-2. The bridge indexes the library with the engine's `compute_features` -
-   once per library and feature type. The index is cached and rebuilt only when
-   a photo is added, removed or changed.
+2. The bridge indexes the library with the engine's `compute_features` - once
+   per library and feature type. The index is cached and rebuilt only when the
+   library changes.
 3. It runs the engine's `match` program as a subprocess, with a timeout and
    readable errors, and parses the ranked results.
-4. Results open in a window of thumbnails; *Open in editor* loads any of them
-   into the editor's image list. The search runs off the UI thread, so the
-   editor stays responsive while a new library is indexed.
+4. Results open in a window of thumbnails, from which any photo can be loaded
+   back into the editor.
 
-## Does the feature type matter? (yes)
-
-Five queries against the 33-photo sample library, counting how many of the top
-4 results show the same item. Some items have fewer than four other photos, so
-the most any feature can score is 16.
-
-| Feature | What it compares | Same-item matches in top 4 |
-|---|---|---|
-| `baseline` | the 7×7 centre pixels | 9 / 16 |
-| `hist` | rg-chromaticity colour histogram | 5 / 16 |
-| `multihist` | top-half and bottom-half colour histograms | 9 / 16 |
-| `texture` | colour + Sobel gradient-magnitude histogram | 8 / 16 |
-| `custom` | centre colour + whole-image texture | 7 / 16 |
-| **`dnn`** | **ResNet-18 embeddings, cosine distance** | **16 / 16** |
-
-Learned features found every possible match; the handcrafted ones found
-between 5 and 9. It's a small library and five queries, so treat this as a
-demonstration rather than a benchmark. Any row can be reproduced, e.g.
-`make demo FEATURE=hist QUERY=samples/library/photo_lemon_1.jpg`, or
-`make demo-dnn QUERY=samples/library/photo_lemon_1.jpg` after `make embeddings`.
-(Queries: `photo_lemon_1`, `salt_IMG_5481`, `ketchup_bottle_IMG_5476`,
-`avocado_1`, `photo_apricot_1`.)
-
-## Quickstart
-
-Requirements: a JDK 17+, `make`, a C++17 compiler, OpenCV 4 or 5, and `pkg-config`.
-
-```bash
-make                # builds the editor, the search engine and Image Studio
-make run-studio     # opens Image Studio: load a photo, then Search → Find similar…
-make demo           # command line: the photos most like a salt container
-make test           # 27 checks, including end-to-end Java → C++ searches
-```
-
-Deep-feature search (optional, needs Python with `tools/requirements.txt`):
-
-```bash
-pip install -r tools/requirements.txt
-make embeddings     # ResNet-18 embeddings for samples/library
-make demo-dnn       # the same salt query, ranked by learned features
-```
-
-The original editor still runs on its own with `make run-editor`.
-
-## Engineering notes
-
-- **No changes to either original codebase.** `studio/` is a new package that
-  composes the editor's public classes (`View`, `ImageDatabase`,
-  `ImageController`, `WritePNG`) and talks to the engine only through its
-  command-line programs. The root `Makefile` drives the engine's own makefile
-  with OpenCV flags from `pkg-config` instead of editing it, so the same source
-  builds against Homebrew's OpenCV 5 on macOS and Ubuntu's OpenCV 4 in CI.
-- **The bridge is testable without a display.** It has no Swing dependency;
-  its checks cover output parsing, input validation, index caching and
-  invalidation, and real searches through the C++ engine - including one that
-  goes through the editor's image reader and PNG writer.
-- **Design patterns where they earn their place.** The editor is MVC with
-  Command, Strategy and Factory; the engine is MVC too, where a new feature type
-  is one new function in the model.
-- **CI** builds everything, runs an end-to-end search and runs the bridge
-  checks on every push.
+The editor and the search engine are each kept exactly as written: `studio/`
+composes the editor's public classes (`View`, `ImageDatabase`, `ImageController`,
+`WritePNG`) and talks to the engine only through its command-line programs.
 
 ## Known limitations
 
@@ -110,20 +133,19 @@ The original editor still runs on its own with `make run-editor`.
 - The editor's image reader ignores EXIF orientation, so phone photos tagged as
   rotated open sideways. The sample library has the rotation applied to the
   pixels, so it looks right everywhere.
-- The sample library is 33 photos; the search engine was built for libraries
-  of around a thousand.
+- The sample library is 33 photos; the engine was designed for libraries of
+  around a thousand.
 
 ## Repository layout
 
 ```
 editor/            Java Swing editor (MVC + Command / Strategy / Factory)
 search-engine/     C++17 / OpenCV content-based image retrieval engine
-studio/            Find similar: the Java-to-C++ bridge, the Search menu, results window, tests
+studio/            Find similar: the Java-to-C++ bridge, Search menu, results window, tests
 tools/             ResNet-18 embeddings for the engine's deep-feature mode
 samples/library/   33 of my own photos (downsized, metadata removed)
 docs/images/       screenshots
 Makefile           one build for everything
 ```
 
-The search engine began as a project for Northeastern's CS5330 (Pattern
-Recognition and Computer Vision).
+MIT licensed - see [LICENSE](LICENSE).
