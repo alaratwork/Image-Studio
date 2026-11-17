@@ -28,11 +28,22 @@ features learned by a deep neural network.
 | Area | Where it shows up |
 |---|---|
 | **Computer vision and image retrieval** | rg-chromaticity color histograms, top/bottom spatial histograms, Sobel gradient texture, matched distance metrics, top-N content-based retrieval over a feature index - [`search-engine/`](search-engine/) |
-| **Deep learning** | a pretrained ResNet-18 used as a feature extractor (transfer learning), and a measured comparison of learned vs. handcrafted features - [`tools/`](tools/embed_library.py) |
+| **Deep learning** | a pretrained ResNet-18 used as a feature extractor (transfer learning); on the sample library its embeddings found 16 of 16 same-item matches in the top 4, against 5-9 for the handcrafted features - [`tools/`](tools/embed_library.py) |
 | **Software architecture** | MVC throughout; Command, Strategy and Factory patterns in the editor; a new feature added by composing the editor's public API, without modifying its code - [`editor/`](editor/), [`studio/`](studio/src/studio/) |
 | **Systems integration** | Java and C++ connected across a process boundary: subprocess management, timeouts, output parsing, error reporting, and a cached index with invalidation - [`SearchEngineBridge`](studio/src/studio/SearchEngineBridge.java) |
 | **Desktop UI** | Swing; indexing and search run off the UI thread, so the editor stays responsive |
 | **Build, test and CI** | one `Makefile` for Java, C++ and Python; builds against OpenCV 4 and 5; 27 headless checks including end-to-end searches; GitHub Actions on every push |
+
+## Quickstart
+
+Needs a JDK 17+, `make`, a C++17 compiler, OpenCV and `pkg-config`
+(macOS: `brew install opencv pkg-config`).
+
+```bash
+git clone https://github.com/alaratwork/Image-Studio.git && cd Image-Studio
+make && make run-studio   # build everything and open Image Studio
+make test                 # 27 checks, including end-to-end Java → C++ searches
+```
 
 ## Using Image Studio
 
