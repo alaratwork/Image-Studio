@@ -5,6 +5,11 @@
 #   make engine       build the C++ search engine (compute_features, match, gui)
 #   make demo         index samples/library and run an example visual search
 #   make run-editor   launch the editor
+#   make studio       compile Image Studio (the editor plus Search) into build/image-studio.jar
+#   make run-studio   launch Image Studio
+#   make test         run the bridge checks, including end-to-end searches
+#   make embeddings   write ResNet-18 embeddings for the library (needs tools/requirements.txt)
+#   make demo-dnn     search by those embeddings
 #   make clean
 #
 # Neither component's own build is modified: the engine's makefile is driven
@@ -22,6 +27,9 @@ OPENCV_LIBS   := $(shell pkg-config --libs-only-L $(OPENCV_PKG) 2>/dev/null) \
                  -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_highgui
 
 EDITOR_SRC := $(shell find editor/src -name '*.java')
+STUDIO_SRC := $(shell find studio/src -name '*.java')
+TEST_SRC   := $(shell find studio/test -name '*.java')
+PYTHON     ?= python3
 
 # demo defaults - override on the command line, e.g. make demo FEATURE=hist
 LIBRARY ?= samples/library
@@ -29,9 +37,9 @@ FEATURE ?= custom
 QUERY   ?= $(LIBRARY)/salt_IMG_5481.jpg
 TOP     ?= 4
 
-.PHONY: all editor engine demo run-editor clean
+.PHONY: all editor engine studio demo demo-dnn embeddings run-editor run-studio test clean
 
-all: editor engine
+all: editor engine studio
 
 editor: $(BUILD)/image-editor.jar
 
@@ -48,8 +56,31 @@ demo: engine
 	search-engine/compute_features $(LIBRARY) $(FEATURE) $(BUILD)/feat_$(FEATURE).csv
 	search-engine/match $(QUERY) $(FEATURE) $(BUILD)/feat_$(FEATURE).csv $(TOP)
 
+studio: $(BUILD)/image-studio.jar
+
+# the editor's sources compile unchanged alongside the new studio package
+$(BUILD)/image-studio.jar: $(EDITOR_SRC) $(STUDIO_SRC)
+	@mkdir -p $(BUILD)/studio-classes
+	$(JAVAC) --release 17 -d $(BUILD)/studio-classes $(EDITOR_SRC) $(STUDIO_SRC)
+	$(JAR) --create --file $@ --main-class studio.ImageStudio -C $(BUILD)/studio-classes .
+
+test: studio engine
+	@mkdir -p $(BUILD)/test-classes
+	$(JAVAC) --release 17 -cp $(BUILD)/studio-classes -d $(BUILD)/test-classes $(TEST_SRC)
+	$(JAVA) -Djava.awt.headless=true -cp $(BUILD)/studio-classes:$(BUILD)/test-classes studio.BridgeTest
+
+embeddings:
+	@mkdir -p $(BUILD)
+	$(PYTHON) tools/embed_library.py $(LIBRARY) $(BUILD)/embeddings.csv
+
+demo-dnn: engine
+	search-engine/match $(notdir $(QUERY)) dnn $(BUILD)/embeddings.csv $(TOP) cosine
+
 run-editor: editor
 	$(JAVA) -jar $(BUILD)/image-editor.jar
+
+run-studio: studio engine
+	$(JAVA) -jar $(BUILD)/image-studio.jar
 
 clean:
 	$(MAKE) -C search-engine clean

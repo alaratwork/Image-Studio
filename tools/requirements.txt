@@ -1,0 +1,5 @@
+# for tools/embed_library.py only - the editor and the engine need none of this.
+# versions the embeddings were verified with (Python 3.14)
+torch==2.15.0
+torchvision==0.29.2
+Pillow==13.0.0

@@ -20,8 +20,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libopencv-dev clang pkg-config
 
-      - name: Build the editor and the search engine
+      - name: Build the editor, the search engine and Image Studio
         run: make
 
       - name: Search the sample library end to end
         run: make demo
+
+      - name: Bridge checks (parsing, caching, Java-to-C++ searches)
+        run: make test
