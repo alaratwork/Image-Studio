@@ -45,11 +45,11 @@ final class SearchMenu {
   static final Map<String, String> FEATURE_LABELS = new LinkedHashMap<>();
 
   static {
-    FEATURE_LABELS.put("custom", "Centre colour + texture");
-    FEATURE_LABELS.put("hist", "Colour histogram");
-    FEATURE_LABELS.put("multihist", "Colour layout (top vs. bottom)");
-    FEATURE_LABELS.put("texture", "Colour + texture");
-    FEATURE_LABELS.put("baseline", "Centre pixels");
+    FEATURE_LABELS.put("custom", "Center color + texture");
+    FEATURE_LABELS.put("hist", "Color histogram");
+    FEATURE_LABELS.put("multihist", "Color layout (top vs. bottom)");
+    FEATURE_LABELS.put("texture", "Color + texture");
+    FEATURE_LABELS.put("baseline", "Center pixels");
   }
 
   private final View view;
